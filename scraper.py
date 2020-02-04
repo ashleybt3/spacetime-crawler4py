@@ -1,18 +1,47 @@
+
 import re
 from urllib.parse import urlparse
+import requests
+from lxml import etree as et
+from bs4 import BeautifulSoup
+
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+      
+    defragment = url.split('#')[0]
+    #print(defragment)
+    links = extract_next_links(defragment, resp)
+    #for i in links:
+        #print(i)
+    validlinks = [link for link in links if is_valid(link)]
+    return validlinks
 
+ 
 def extract_next_links(url, resp):
     # Implementation requred.
-    return list()
+    soup = BeautifulSoup(resp.text, features="lxml")
+    text = soup.get_text()
+    for line in text.splitlines():
+        print(line.strip())
+
+    #print(soup.get_text()) 
+
+
+ 
+    return [link.get('href') for link in soup.find_all('a')]
 
 def is_valid(url):
+    # domain patterns that are valid
+    generalHN = r".*((\.ics\.uci\.edu)|(\.cs\.uci\.edu)|(\.informatics\.uci\.edu)|(\.stat\.uci\.edu))$"
+    specHN = r".*today\.uci\.edu$"
+    specPath = r"^\/department\/information_computer_sciences\/.*"
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
+            return False
+        elif not re.match(generalHN, parsed.netloc):
+            return False
+        elif not re.match(specHN, parsed.netloc) and re.match(specPath, parsed.path):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -27,3 +56,18 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+
+if __name__ == "__main__":
+    resp = requests.get("http://www.ics.uci.edu#aaa")
+    #print(resp.text)
+    #newresp = Response(cbor.loads(resp.content))
+    scraper("http://www.ics.uci.edu#aaa", resp)
+    
+
+
+
+
+
+
+
